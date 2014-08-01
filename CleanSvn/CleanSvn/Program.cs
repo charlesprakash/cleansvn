@@ -1,14 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
+﻿///////////////////////////////////////////////////////////////////////////////
+// Copyright © Charles Prakash Dasari. 2014. All rights reserved.
+///////////////////////////////////////////////////////////////////////////////
+
+using System;
 using System.IO;
-using System.Linq;
-using System.Management;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CleanSvn
 {
+    // Imagine you have moved out of SVN to either a different source control
+    // system or some other mechanism of managing your files. You will have an
+    // annoying .svn file in every folder that you have ever created to the
+    // deepest nesting level possible. This program tries to to clean up that
+    // folder as you don't have any use for it anymore.
     class Program
     {
         static void Main(string[] args)
@@ -45,22 +49,36 @@ namespace CleanSvn
                 ForceDeleteFolder(svnFolder);
             }
 
-            foreach (var child in Directory.GetDirectories(parentFolder))
+            try
             {
-                RemoveSvnFolder(child);
+                foreach (var child in Directory.GetDirectories(parentFolder))
+                {
+                    RemoveSvnFolder(child);
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Console.WriteLine("Could not access the folder {0}", parentFolder);
             }
         }
 
         static void ForceDeleteFolder(string svnFolder)
         {
-            foreach (string file in Directory.GetFiles(svnFolder, "*", SearchOption.AllDirectories))
+            try
             {
-                var longFileName = @"\\?\" + file;
-                var attributesSet = SetFileAttributes(longFileName, (uint)0x20);  // Set ARCHIVE only attribute
-                var deleted = DeleteFile(longFileName);
-                Console.WriteLine("{0} - {1}", file, attributesSet && deleted);
+                foreach (string file in Directory.GetFiles(svnFolder, "*", SearchOption.AllDirectories))
+                {
+                    var longFileName = @"\\?\" + file;
+                    var attributesSet = SetFileAttributes(longFileName, (uint)0x20);  // Set ARCHIVE only attribute
+                    var deleted = DeleteFile(longFileName);
+                    Console.WriteLine("{0} - {1}", file, attributesSet && deleted);
+                }
+                Directory.Delete(svnFolder, true);
             }
-            Directory.Delete(svnFolder, true);
+            catch (UnauthorizedAccessException)
+            {
+                Console.WriteLine("Could not access folder {0}", svnFolder);
+            }
         }
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
