@@ -55,13 +55,18 @@ namespace CleanSvn
         {
             foreach (string file in Directory.GetFiles(svnFolder, "*", SearchOption.AllDirectories))
             {
-                var deleted = DeleteFile(@"\\?\" + file);
-                Console.WriteLine("{0} - {1}", file, deleted);
+                var longFileName = @"\\?\" + file;
+                var attributesSet = SetFileAttributes(longFileName, (uint)0x20);  // Set ARCHIVE only attribute
+                var deleted = DeleteFile(longFileName);
+                Console.WriteLine("{0} - {1}", file, attributesSet && deleted);
             }
             Directory.Delete(svnFolder, true);
         }
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static extern bool DeleteFile(string lpszLongPath);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern bool SetFileAttributes(string lpFileName, uint dwFileAttributes);
     }
 }
